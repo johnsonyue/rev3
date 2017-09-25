@@ -1,0 +1,86 @@
+#! /bin/bash 
+
+###################################################
+#params:
+#  @input_file: input file
+#  @type: different type of data source
+###################################################
+
+usage(){
+	echo "decode -t <\$type> -f <\$input_file>"
+}
+
+#filename includes monitor_name, date
+meta(){
+	rule=$1
+	name=$2
+	case $rule in
+		"caida")
+			echo $name | sed "s/^.*\///g" | sed "s/\.warts\.gz//g" | awk -F '.' '{print $3,$2}'
+			#e.g. /ftp/raw_data/caida/20161220-20170617/20170827/team-1.20170827.anc-us.warts.gz
+			;;
+		"iplane")
+			echo $name | sed "s/^.*\///g" | awk -F'_' '{print $2$3$4}' | cut -d '.' -f 1
+			;;
+		"iplane_sub")
+			echo $name | sed "s/^.*\///g" | sed "s/^trace\.out\.//g" | awk '{print $0}'
+			#e.g. traces_2016_08_11/trace.out.planetlab3.wail.wisc.edu
+			;;
+		"ripeatlas")
+			
+			;;
+		*)
+			usage
+			exit -1;;
+	esac
+}
+
+#parse cmd line args.
+OPTIND=1
+while getopts "t:f:" opt; do
+	case "$opt" in
+		t)
+			TYPE=$OPTARG ;;
+		f)
+			FILE=$OPTARG ;;
+		*)
+			usage
+			exit -1;;
+	esac
+done
+
+#type and FILE is mandatory
+[ -z "$TYPE" ] && usage && exit
+[ -z "$FILE" ] && usage && exit
+
+#decode file according to type & filename
+case $TYPE in
+	"caida")
+		echo "#"$(meta caida $FILE)
+		if [ ! -z "$( echo $FILE | grep "\.tar\.gz$" )" ]; then
+			[ ! -z "$( echo $FILE | grep "warts")" ] &&  tar zxvf $FILE -O | sc_analysis_dump && exit
+			tar zxvf $FILE -O && exit
+		elif [ ! -z "$( echo $FILE | grep "gz$" )" ]; then
+			[ ! -z "$( echo $FILE | grep "warts")" ] &&  gzip -cd $FILE | sc_analysis_dump && exit
+			gzip -cd $FILE && exit
+		else
+			[ ! -z "$( echo $FILE | grep "warts")" ] && cat $FILE | sc_analysis_dump && exit
+			cat $FILE && exit
+		fi | grep -v "#"
+		;;
+	"iplane")
+		cnt=0
+		datetime=$(date -d "$(meta iplane $FILE)" +%s)
+		tar tf $FILE 2>&1 | while read fn; do
+			test $cnt -lt 2 && cnt=$((cnt+1)) && continue
+			echo "#"$(meta iplane_sub $fn)" "$datetime
+			tar zxfO $FILE $fn | ./readoutfile
+		done
+		;;
+	"ripeatlas")
+		
+		;;
+	*)
+		usage
+		exit -1;;
+esac | python uniform.py $TYPE
