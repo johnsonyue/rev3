@@ -34,7 +34,7 @@ def transform_caida():
 		dst_rtt = fields[7]
 		path_str += "" if replied == "N" else format_json["hd"] + str(dstip) + format_json["itd"] + str(dst_rtt) + format_json["itd"] + str(1)
 
-		print str(src_ip) + format_json["fd"] + str(dstip) + format_json["fd"] + str(timestamp) + format_json["fd"] + str(path_str)
+		print str(srcip) + format_json["fd"] + str(dstip) + format_json["fd"] + str(timestamp) + format_json["fd"] + str(path_str)
 			
 		'''
 		rpl_ttl = fields[9]
@@ -132,7 +132,7 @@ def transform_ripeatlas():
 					hop_str = format_json["bh"]
 				
 				path_str += str(hop_str) + format_json["hd"]
-			path_str.strip(format_json["hd"])
+			path_str = path_str.strip(format_json["hd"])
 		
 			print str(srcip) + format_json["fd"] + str(dstip) + format_json["fd"] + str(timestamp) + format_json["fd"] + str(path_str)
 

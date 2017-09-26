@@ -27,11 +27,16 @@ def process():
 			line = raw_input()
 		except EOFError:
 			return
+	
+		if line[0] == "#":
+			continue
 		
 		fields = line.strip('\n').split(format_json["fd"])
 		monitor = fields[0]
 		dstip = fields[1]
 		timestamp = int(fields[2])
+		if fields[3] == "":
+			continue
 		path = fields[3].split(format_json["hd"])
 		
 		prev_ip = ""
@@ -51,9 +56,9 @@ def process():
 					if delay < 0:
 						delay = 0
 					if i == len(path)-1 and hop.split(format_json["itd"])[0] == dstip:
-						is_dest = "y"
+						is_dest = "Y"
 					else:
-						is_dest = "n"
+						is_dest = "N"
 					insert(prev_ip,ip,is_dest,star,delay,i+1,monitor)
 				
 				prev_ip = ip
@@ -78,15 +83,17 @@ def main(argv):
 	
 	process()
 	
+	#out
+	#0.in, 1.out, 2.is_dst, 3.star, 4.delay, 5.freq, 6.ttl, 7.monitor
 	edge_key_list = sorted( edge_dict.iterkeys(), key=lambda k:(k[0],k[1]) )
 	if output_name == "":
 		for key in edge_key_list:
 			ingress = key[0]
 			out = key[1]
 			edge = edge_dict[key]
-			edge_str = str(ingress) + "," + str(out)
+			edge_str = str(ingress) + format_json["sp"] + str(out)
 			for e in edge:
-				edge_str += "," + str(e)
+				edge_str += format_json["sp"] + str(e)
 			print edge_str
 	else:
 		with open(output_name,'rb') as fp:
@@ -94,9 +101,9 @@ def main(argv):
 				ingress = key[0]
 				out = key[1]
 				edge = edge_dict[key]
-				edge_str = str(ingress) + "," + str(out)
+				edge_str = str(ingress) + format_json["sp"] + str(out)
 				for e in edge:
-					edge_str += "," + str(e)
+					edge_str += format_json["sp"] + str(e)
 			fp.write(edge_str+"\n")
 		fp.close()
 
