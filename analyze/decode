@@ -78,7 +78,11 @@ case $TYPE in
 		done
 		;;
 	"ripeatlas")
-		
+		if [ ! -z "$( echo $FILE | grep "\.gz$" )" ]; then
+			gzip -cd $FILE
+		else
+			cat $FILE
+		fi
 		;;
 	*)
 		usage
