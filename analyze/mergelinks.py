@@ -4,6 +4,8 @@ import getopt
 import json
 import heapq
 
+import time
+
 fp = open("format.json",'rb')
 format_json = json.loads(fp.read())
 
@@ -22,8 +24,9 @@ def merge_2_lines(al,bl):
 	al[5] = str(int(al[5]) + int(bl[5]))
 	if int(bl[6]) < int(al[6]):
 		al[6] = bl[6]
-		if al[7] < bl[7]:
-			al[7] = bl[7]
+		al[7] = bl[7]
+	elif bl[6] == al[6]:
+		al[7] = bl[7] if bl[7] < al[7] else al[7]
 	return al
 
 def write_line(pl,fo):
@@ -31,16 +34,31 @@ def write_line(pl,fo):
 	for i in pl:
 		line_str += i + format_json["sp"]
 	fo.write(line_str.strip(format_json["sp"])+"\n")
+		
+def merge_x_files(ifn_list,temp_fn):
+	fo = open(temp_fn,'wb')
+	ifp_list = map( lambda x:open(x,'rb'), ifn_list )
 
-def merge_x_way(line_list, fo): #Knuth k way intersection
-	pq = [] #priority queue
-	pl = []
+	#grab x*y lines from disk
+	line_list = [ [] for i in range(len(ifn_list)) ]
+	for i in range(len(ifp_list)):
+		fp=ifp_list[i]
+		for j in range(y):
+			line = fp.readline()
+			if not line:
+				break
+			line_list[i].append(line)
+
 	cursor_list = [ 0 for i in range(len(line_list)) ]
+	
+	#init enqueue
+	pq = [] #priority queue
+	pl = [] #previous line
 	for i in range(len(line_list)):
-		if len(line_list[i]) != 0:
-			cur = cursor_list[i]
-			ids = line_list[i][cur].split(format_json["fd"])[0:2]
-			heapq.heappush(pq, ( ids, (line_list[i][cur],i) ))
+		if cursor_list[i] < len(line_list[i]):
+			heapq.heappush( pq, (line_list[i][cursor_list[i]],i) )
+			cursor_list[i] += 1
+
 	while True:
 		if len(pq) == 0:
 			if len(pl) != 0:
@@ -48,42 +66,27 @@ def merge_x_way(line_list, fo): #Knuth k way intersection
 			break
 
 		a = heapq.heappop(pq)
-		al = a[1][0].strip('\n').split(format_json["sp"])
+		al = a[0].strip('\n').split(format_json["sp"])
 		if al[0:2] == pl[0:2]:
 			al = merge_2_lines(al,pl)
 		elif len(pl) != 0:
 			write_line(pl,fo)
 		pl = al
 
-		i = int(a[1][1])
-		cursor_list[i] += 1
-		if not ( cursor_list[i] >= len(line_list[i] )):
-			ids = line_list[i][cursor_list[i]].split(format_json["fd"])[0:2]
-			heapq.heappush(pq, ( ids,(line_list[i][cursor_list[i]], i) ))
-
-def merge_x_files(ifn_list,temp_fn):
-	fo = open(temp_fn,'wb')
-	ifp_list = map( lambda x:open(x,'rb'), ifn_list )
-
-	while True:
-		#grab x*y lines from disk
-		line_list = [ [] for i in range(len(ifn_list)) ]
-		has_line = False
-		for i in range(len(ifp_list)):
-			fp=ifp_list[i]
+		i = a[1]
+		if cursor_list[i] == len(line_list[i]):
+			line_list[i] = []
+			fp = ifp_list[i]
 			for j in range(y):
 				line = fp.readline()
 				if not line:
 					break
 				line_list[i].append(line)
-			if not (j == 0):
-				has_line = True
-
-		if not has_line:
-			break
-
-		#merge x*y lines in ram
-		merge_x_way(line_list, fo)
+			cursor_list[i] = 0
+		
+		if len(line_list[i]) != 0:
+			heapq.heappush( pq, (line_list[i][cursor_list[i]],i) )
+			cursor_list[i] += 1
 
 	map( lambda x:x.close(), ifp_list )
 	fo.close()
@@ -100,7 +103,7 @@ def merge(ifn_list,del_org=False):
 	if len(temp_ifn_list) == 1:
 		os.rename(temp_ifn_list[0], output_name)
 		return
-	merge(temp_ifn_list,del_org=False)
+	merge(temp_ifn_list,del_org=True)
 
 def usage():
 	print "mergelinks [-i <$input_name>]+ -"
@@ -127,9 +130,9 @@ def main(argv):
 		if o == "-d":
 			tmp_dir = a
 		if o == "-x":
-			x = a
+			x = int(a)
 		if o == "-y":
-			y = a
+			y = int(a)
 	
 	if len(ifn_list) == 0:
 		while True:
@@ -142,7 +145,7 @@ def main(argv):
 	if x == 0:
 		x = len(ifn_list)
 	if y == 0:
-		y = 1000000
+		y = 1000
 	if tmp_dir == "":
 		tmp_dir = "tmp"
 	if not os.path.exists(tmp_dir):
