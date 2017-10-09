@@ -88,7 +88,7 @@ def main(argv):
 	process()
 	
 	#out
-	#0.in, 1.out, 2.is_dst, 3.star, 4.delay, 5.freq, 6.ttl, 7.monitor
+	#0.in, 1.out, 2.is_dst, 3.star, 4.delay, 5.freq, 6.ttl, 7.monitor, 8.firstseen, 9.lastseen
 	edge_key_list = sorted( edge_dict.iterkeys(), key=lambda k:(k[0],k[1]) )
 	if output_name == "":
 		for key in edge_key_list:
