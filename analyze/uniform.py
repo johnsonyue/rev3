@@ -27,12 +27,22 @@ def transform_caida():
 		
 		path = fields[13]
 		path_str = ""
-		for hop in path.split('\t'):
-			path_str += hop + format_json["hd"]
+		path_fields = path.split('\t')
+		for i in range(len(path_fields)):
+			hop = path_fields[i]
+			if hop == "q":
+				hop_str = "q"
+			else:
+				hop_str = ""
+				for it in hop.split(';'):
+					hop_str += it.rsplit(',',1)[0] + "," + str(i+1) + ";"
+				hop_str = hop_str.strip(';')
+
+			path_str += hop_str + format_json["hd"]
 		path_str = path_str.strip(format_json["hd"])
 		replied = fields[6]
 		dst_rtt = fields[7]
-		path_str += "" if replied == "N" else format_json["hd"] + str(dstip) + format_json["itd"] + str(dst_rtt) + format_json["itd"] + str(1)
+		path_str += "" if replied == "N" else format_json["hd"] + str(dstip) + format_json["itd"] + str(dst_rtt) + format_json["itd"] + str(len(path_fields)+1)
 
 		print str(srcip) + format_json["fd"] + str(dstip) + format_json["fd"] + str(timestamp) + format_json["fd"] + str(path_str)
 			
@@ -47,7 +57,8 @@ def transform_caida():
 
 def transform_iplane():
 	path = []
-	srcip = ""
+	#srcip = ""
+	srcip = "0.0.0.0"
 	dstip = ""
 	timestamp = ""
 	while True:
@@ -76,7 +87,7 @@ def transform_iplane():
 			path = []
 		else:
 			if fields[1] != "0.0.0.0":
-				hop_str = fields[1] + format_json["itd"] + fields[2] + format_json["itd"] + str(1)
+				hop_str = fields[1] + format_json["itd"] + fields[2] + format_json["itd"] + str(int(fields[0].strip(':'))+1)
 			else:
 				hop_str = format_json["bh"]
 			path.append(hop_str)
@@ -124,8 +135,9 @@ def transform_ripeatlas():
 				hop_str = ""
 				for ip in sorted(tpl_dict.keys(), key=lambda x:tpl_dict[x][1]):
 					rtt = tpl_dict[ip][0]
-					ntries = tpl_dict[ip][1]
-					hop_str += str(ip) + format_json["itd"] + str(rtt) + format_json["itd"] + str(ntries) + format_json["td"]
+					#ntries = tpl_dict[ip][1]
+					#hop_str += str(ip) + format_json["itd"] + str(rtt) + format_json["itd"] + str(ntries) + format_json["td"]
+					hop_str += str(ip) + format_json["itd"] + str(rtt) + format_json["itd"] + str(hop["hop"]) + format_json["td"]
 				hop_str = hop_str.strip(format_json["td"])
 
 				if hop_str == "":

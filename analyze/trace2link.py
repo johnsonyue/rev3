@@ -6,9 +6,9 @@ fp = open("format.json",'rb')
 format_json = json.loads(fp.read())
 
 edge_dict = {}
-def insert(ingress, out, is_dst, star, delay, ttl, monitor):
+def insert(ingress, out, is_dst, star, delay, ttl, monitor, timestamp):
 	if not edge_dict.has_key((ingress,out)):
-		edge_dict[(ingress,out)] = [is_dst,star,delay,1,ttl,monitor]
+		edge_dict[(ingress,out)] = [is_dst,star,delay,1,ttl,monitor,timestamp,timestamp]
 		return
 	edge = edge_dict[(ingress,out)]
 	if is_dst == "n":
@@ -20,6 +20,10 @@ def insert(ingress, out, is_dst, star, delay, ttl, monitor):
 	edge[3] += 1
 	if ttl < edge[4] or (ttl == edge[4] and monitor < edge[5]):
 		edge[4:6] = [ttl,monitor]
+	if timestamp < edge[6]:
+		edge[6] = timestamp
+	if timestamp > edge[7]:
+		edge[7] = timestamp
 
 def process():
 	while True:
@@ -59,7 +63,7 @@ def process():
 						is_dest = "Y"
 					else:
 						is_dest = "N"
-					insert(prev_ip,ip,is_dest,star,delay,i+1,monitor)
+					insert(prev_ip,ip,is_dest,star,delay,i+1,monitor,timestamp)
 				
 				prev_ip = ip
 				prev_rtt = rtt

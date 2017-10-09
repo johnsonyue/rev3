@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import getopt
 import json
@@ -14,7 +15,7 @@ y = 0
 output_name = "default.output"
 
 def merge_2_lines(al,bl):
-	#0.in, 1.out, 2.is_dst, 3.star, 4.delay, 5.freq, 6.ttl, 7.monitor
+	#0.in, 1.out, 2.is_dst, 3.star, 4.delay, 5.freq, 6.ttl, 7.monitor, 8.firstseen, 9.lastseen
 	if bl[2] == "N":
 		al[2] = "N"
 	if int(bl[3]) < int(al[3]):
@@ -27,6 +28,10 @@ def merge_2_lines(al,bl):
 		al[7] = bl[7]
 	elif bl[6] == al[6]:
 		al[7] = bl[7] if bl[7] < al[7] else al[7]
+	if int(bl[8]) < int(al[8]):
+		al[8] = bl[8]
+	if int(bl[8]) > int(al[8]):
+		al[8] = bl[8]
 	return al
 
 def write_line(pl,fo):
@@ -101,7 +106,8 @@ def merge(ifn_list,del_org=False):
 		for fn in ifn_list:
 			os.remove(fn)
 	if len(temp_ifn_list) == 1:
-		os.rename(temp_ifn_list[0], output_name)
+		#os.rename(temp_ifn_list[0], output_name)
+		shutil.move(temp_ifn_list[0], output_name)
 		return
 	merge(temp_ifn_list,del_org=True)
 
