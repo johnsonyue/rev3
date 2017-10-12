@@ -100,7 +100,7 @@ def main(argv):
 				edge_str += format_json["sp"] + str(e)
 			print edge_str
 	else:
-		with open(output_name,'rb') as fp:
+		with open(output_name,'wb') as fp:
 			for key in edge_key_list:
 				ingress = key[0]
 				out = key[1]

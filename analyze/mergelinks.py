@@ -30,8 +30,8 @@ def merge_2_lines(al,bl):
 		al[7] = bl[7] if bl[7] < al[7] else al[7]
 	if int(bl[8]) < int(al[8]):
 		al[8] = bl[8]
-	if int(bl[8]) > int(al[8]):
-		al[8] = bl[8]
+	if int(bl[9]) > int(al[9]):
+		al[9] = bl[9]
 	return al
 
 def write_line(pl,fo):
