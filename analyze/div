@@ -1,0 +1,16 @@
+#!/bin/bash
+day(){
+input=$1
+output=$2
+
+day=$(echo $input | sed 's/^.*\///g')
+echo "ls $input/* | while read line;do start=$(date +%s); printf \$line\" \" 1>&2; ./decode -t caida -f \$line; echo \$((\$(date +%s) - \$start)) 1>&2; done | python country.py -p $output/$day"
+ls $input/* | while read line;do start=$(date +%s); printf $line" " 1>&2; ./decode -t caida -f $line; echo $(($(date +%s) - $start)) 1>&2; done | python country.py -p $output/$day
+}
+
+[ $# -ne 3 ] && exit
+in=$1
+month=$2
+out=$3
+
+ls -d $in/$month* | while read line; do echo "day: $line"; day $line $out; done
