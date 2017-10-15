@@ -26,17 +26,22 @@ def merge(a,b):
 	return a
 
 def insert(a,b,attr):
-	aid = (ip2router[a] if ip2router.has_key(a) else len(router_list))
-	if ( aid == len(router_list) ):
+	if ip2router.has_key(a):
+		aid=ip2router[a]
+	else:
+		aid=len(router_list)
 		router_list.append(Set([a]))
 		router_type.append('h')
-		ip2router[a] = aid
-	bid = (ip2router[b] if ip2router.has_key(b) else len(router_list))
-	if ( bid == len(router_list) ):
+		ip2router[a]=aid
+
+	if ip2router.has_key(b):
+		bid=ip2router[b]
+	else:
+		bid=len(router_list)
 		router_list.append(Set([b]))
 		router_type.append('h')
-		ip2router[b] = aid
-	
+		ip2router[b]=bid
+
 	if not edge_dict.has_key((aid,bid)):
 		edge_dict[(aid,bid)] = attr
 	else:
@@ -86,12 +91,18 @@ def process(router,alias,edge,prefix):
 	global router_type
 	#read
 	with open(router,'rb') as rf:
-		for line in rf.readlines():
+		while True:
+			line=rf.readline()
+			if line == "":
+				break
 			router_ip[line.strip('\n')] = ""
 	rf.close()
 
 	with open(alias,'rb') as af:
-		for line in af.readlines():
+		while True:
+			line=af.readline()
+			if line == "":
+				break
 			line=line.strip('\n')
 			aggr(line.split()[0],line.split()[1])
 	af.close()
@@ -104,12 +115,16 @@ def process(router,alias,edge,prefix):
 			router_type.append('r')
 	
 	with open(edge,'rb') as ef:
-		for line in ef.readlines():
+		while True:
+			line=ef.readline()
+			if line == "":
+				break
 			line=line.strip('\n')
 			insert(line.split(' ')[0],line.split(' ')[1],line.split(' ')[2:])
 	ef.close()
 	
 	#write
+	sys.stderr.write( "writing node ... \n" )
 	with open(prefix+".node",'wb') as of:
 		for i in range(len(router_list)):
 			of.write( "Node" + str(i) + "," + str(router_type[i]) + ",")
@@ -118,14 +133,17 @@ def process(router,alias,edge,prefix):
 			for f in r:
 				if_str += f+" "
 			of.write( if_str.strip(" ") + "\n")
+	sys.stderr.write( "closing node ... \n" )
 	of.close()
 
+	sys.stderr.write( "writing edge ... \n" )
 	with open(prefix+".edge",'wb') as of:
 		for k,v in edge_dict.items():
 			of.write("Node" + str(k[0]) + ",Node" + str(k[1]))
 			for f in v:
 				of.write("," + str(f))
 			of.write("\n")
+	sys.stderr.write( "closing edge ... \n" )
 	of.close()
 
 def usage():
