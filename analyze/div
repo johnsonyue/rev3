@@ -3,6 +3,8 @@ day(){
 input=$1
 output=$2
 
+test $(ls $input | wc -l) -lt 1 && exit
+
 day=$(echo $input | sed 's/^.*\///g')
 echo "ls $input/* | while read line;do start=$(date +%s); printf \$line\" \" 1>&2; ./decode -t caida -f \$line; echo \$((\$(date +%s) - \$start)) 1>&2; done | python country.py -p $output/$day"
 ls $input/* | while read line;do start=$(date +%s); printf $line" " 1>&2; ./decode -t caida -f $line; echo $(($(date +%s) - $start)) 1>&2; done | python country.py -p $output/$day
@@ -13,4 +15,20 @@ in=$1
 month=$2
 out=$3
 
-ls -d $in/$month* | while read line; do echo "day: $line"; day $line $out; done
+month(){
+  file=$1
+  out=$2
+  echo "day $file $out"
+  day $file $out
+}
+
+export -f day
+export -f month
+
+#length=$(ls -d $in/$month* | wc -l)
+#chunk=8
+#cur=0
+#while test $cur -lt $length; do ls -d $in/$month* | tail -n +$(($cur+1)) | head -n $chunk | parallel --no-notice month {} $out; cur=$(($cur+$chunk)); done
+
+chunk=8
+ls -d $in/$month* | parallel -j $chunk --no-notice month {} $out

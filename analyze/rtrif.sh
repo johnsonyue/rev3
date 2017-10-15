@@ -79,7 +79,7 @@ for k,v in out.items():
   if v == "N":
     print k
 END
-) | sort | uniq >router
+) | sort | uniq >$output
 STUFF
 
 cat $input | python <(
@@ -100,7 +100,7 @@ for k,v in out.items():
   if v == "N":
     print k
 END
-) | sort | uniq >router
+) | sort | uniq >$output
 
 #kill `ps -ef | grep iffinder | awk '{print $2}'` >/dev/null 2>&1 #kill active iffinder.
 #echo "$iffinder -d -o $output -c 200 -r 500 rst"
