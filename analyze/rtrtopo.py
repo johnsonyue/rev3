@@ -29,10 +29,12 @@ def insert(a,b,attr):
 	aid = (ip2router[a] if ip2router.has_key(a) else len(router_list))
 	if ( aid == len(router_list) ):
 		router_list.append(Set([a]))
+		router_type.append('h')
 		ip2router[a] = aid
 	bid = (ip2router[b] if ip2router.has_key(b) else len(router_list))
 	if ( bid == len(router_list) ):
 		router_list.append(Set([b]))
+		router_type.append('h')
 		ip2router[b] = aid
 	
 	if not edge_dict.has_key((aid,bid)):
@@ -40,11 +42,18 @@ def insert(a,b,attr):
 	else:
 		edge_dict[(aid,bid)] = merge(edge_dict[(aid,bid)],attr)
 
+router_ip = {}
 router_list = []
+router_type = []
 deleted = []
 ip2router = {}
 
 def aggr(a,b):
+	if router_ip.has_key(a):
+		router_ip[a]=1
+	if router_ip.has_key(b):
+		router_ip[b]=1
+
 	aid = -1
 	if ip2router.has_key(a):
 		aid = ip2router[a]
@@ -72,15 +81,27 @@ def aggr(a,b):
 			ip2router[a] = bid
 			router_list[bid].add(a)
 
-def process(alias,edge,prefix):
+def process(router,alias,edge,prefix):
 	global router_list
+	global router_type
 	#read
+	with open(router,'rb') as rf:
+		for line in rf.readlines():
+			router_ip[line.strip('\n')] = ""
+	rf.close()
+
 	with open(alias,'rb') as af:
 		for line in af.readlines():
 			line=line.strip('\n')
 			aggr(line.split()[0],line.split()[1])
 	af.close()
 	router_list = [ router_list[i] for i in range(len(router_list)) if not deleted[i] ]
+	router_type = [ 'r' for i in range(len(router_list)) ]
+	for k,v in router_ip.items():
+		if v != 1:
+			ip2router[k] = len(router_list)
+			router_list.append([k])
+			router_type.append('r')
 	
 	with open(edge,'rb') as ef:
 		for line in ef.readlines():
@@ -91,7 +112,7 @@ def process(alias,edge,prefix):
 	#write
 	with open(prefix+".node",'wb') as of:
 		for i in range(len(router_list)):
-			of.write( "Node" + str(i) + "," )
+			of.write( "Node" + str(i) + "," + str(router_type[i]) + ",")
 			r = router_list[i]
 			if_str = ""
 			for f in r:
@@ -108,13 +129,11 @@ def process(alias,edge,prefix):
 	of.close()
 
 def usage():
-	print "rtrtopo -e <$edge-file> -a <$alias-file> -p <$prefix>"
-	print "  or"
-	print "rtrtopo -e <$edge-file> -s <$set-file> -p <$prefix>"
+	print "rtrtopo -r <$router-file> -e <$edge-file> -a <$alias-file> -p <$prefix>"
 
 def main(argv):
 	try:
-		opts, args = getopt.getopt(argv[1:], "ha:e:p:")
+		opts, args = getopt.getopt(argv[1:], "ha:e:r:p:")
 	except getopt.GetoptError as err:
 		print str(err)
 		usage()
@@ -122,11 +141,14 @@ def main(argv):
 
 	alias = ""
 	edge = ""
+	router = ""
 	prefix = "default"
 	for o,a in opts:
 		if o == "-h":
 			usage()
 			exit(0)
+		elif o == "-r":
+			router = a
 		elif o == "-a":
 			alias = a
 		elif o == "-e":
@@ -134,11 +156,11 @@ def main(argv):
 		elif o == "-p":
 			prefix = a
 		
-	if alias == "" or edge == "":
+	if alias == "" or edge == "" or router == "":
 		usage()
 		exit(2)
 	
-	process(alias,edge,prefix)
+	process(router,alias,edge,prefix)
 
 if __name__ == "__main__":
 	main(sys.argv)

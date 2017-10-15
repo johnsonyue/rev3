@@ -1,0 +1,144 @@
+#!/bin/bash
+links_stat(){
+cat $router <(echo "#") $links | python <(
+cat << "EOF"
+router_ip={}
+total_ip={}
+r2r_cnt=0
+cnt=0
+
+while True:
+  line=raw_input()
+  if line[0] == '#':
+    break
+  router_ip[line.strip('\n')] = ""
+
+while True:
+  try:
+    line=raw_input()
+  except:
+    break
+  fields=line.split(' ')
+  if not total_ip.has_key(fields[0]):
+    total_ip[fields[0]]=[1,0]
+  else:
+    total_ip[fields[0]][0]+=1
+  if not total_ip.has_key(fields[1]):
+    total_ip[fields[1]]=[0,1]
+  else:
+    total_ip[fields[1]][1]+=1
+
+  if router_ip.has_key(fields[1]):
+    r2r_cnt+=1
+  cnt+=1
+
+total=[ [0,-1],[0,-1] ] #(in,out)x(sum,max)-->R
+router=[ -1,[0,-1] ] #omitted (in,sum)
+host=-1
+for ip in total_ip.keys():
+  o=total_ip[ip][0]
+  i=total_ip[ip][1]
+  total[0][0]+=o
+  if o > total[0][1]:
+    total[0][1] = o
+  total[1][0]+=i
+  if i > total[1][1]:
+    total[1][1] = i
+  if router_ip.has_key(ip):
+    if o > router[0]:
+      router[0] = o
+    router[1][0]+=i
+    if i > router[1][1]:
+      router[1][1] = i
+  else:
+    if i > host:
+      host=i
+
+print "#TON,NOL,NON" #type of node, number of links, number of nodes.
+print "B,"+str(cnt)+","+str(len(total_ip))
+print "R,"+str(r2r_cnt)+","+str(len(router_ip))
+print "#TOD,BSOD,BMAX" #type of degree, sum of degres, max
+print "I,"+str(total[1][0])+","+str(total[1][1])
+print "O,"+str(total[0][0])+","+str(total[0][1])
+print "#TOD,RSOD,RMAX"
+print "I,"+str(router[1][0])+","+str(router[1][1])
+print "O,"+str(total[0][0])+","+str(router[0])
+print "#TOD,HMAX"
+print "I,"+str(host)
+EOF
+)
+}
+
+router_stat(){
+node=$1
+edge=$2
+th=$(cat $node | awk -F',' '{if ($2=="h") exit; print 0}' | wc -l)
+cat <(echo $th) $edge | python <(
+cat << "EOF"
+th=int(raw_input())
+r2r_cnt=0
+total_ip={}
+cnt=0
+
+while True:
+  try:
+    line=raw_input()
+  except:
+    break
+  fields=line.split(',')
+  if not total_ip.has_key(fields[0]):
+    total_ip[fields[0]]=[1,0]
+  else:
+    total_ip[fields[0]][0]+=1
+  if not total_ip.has_key(fields[1]):
+    total_ip[fields[1]]=[0,1]
+  else:
+    total_ip[fields[1]][1]+=1
+  if int(fields[1][4:]) < th:
+    r2r_cnt+=1
+  cnt+=1
+
+total=[ [0,-1],[0,-1] ] #(in,out)x(sum,max)-->R
+router=[ -1,[0,-1] ] #omitted (in,sum)
+host=-1
+for ip in total_ip.keys():
+  o=total_ip[ip][0]
+  i=total_ip[ip][1]
+  total[0][0]+=o
+  if o > total[0][1]:
+    total[0][1] = o
+  total[1][0]+=i
+  if i > total[1][1]:
+    total[1][1] = i
+  if int(ip[4:]) < th:
+    if o > router[0]:
+      router[0] = o
+    router[1][0]+=i
+    if i > router[1][1]:
+      router[1][1] = i
+  else:
+    if i > host:
+      host=i
+
+print "#TON,NOL,NON" #type of node, number of links, number of nodes.
+print "B,"+str(cnt)+","+str(len(total_ip))
+print "R,"+str(r2r_cnt)+","+str(th)
+print "#TOD,BSOD,BMAX" #type of degree, sum of degres, max
+print "I,"+str(total[1][0])+","+str(total[1][1])
+print "O,"+str(total[0][0])+","+str(total[0][1])
+print "#TOD,RSOD,RMAX"
+print "I,"+str(router[1][0])+","+str(router[1][1])
+print "O,"+str(total[0][0])+","+str(router[0])
+print "#TOD,HMAX"
+print "I,"+str(host)
+EOF
+)
+}
+
+links=/ftp/results/201708.month
+router=/ftp/results/router
+links_stat $router $links
+
+node=/ftp/results/201708.node
+edge=/ftp/results/201708.edge
+router_stat $node $edge
