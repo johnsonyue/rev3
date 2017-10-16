@@ -47,12 +47,14 @@ for ip in total_ip.keys():
   if router_ip.has_key(ip):
     if o > router[0]:
       router[0] = o
+      print "o: "+str(ip)+","+str(o)
     router[1][0]+=i
     if i > router[1][1]:
       router[1][1] = i
   else:
     if i > host:
       host=i
+      print "i: "+str(ip)+","+str(i)
 
 print "#TON,NOL,NON" #type of node, number of links, number of nodes.
 print "B,"+str(cnt)+","+str(len(total_ip))
@@ -70,22 +72,19 @@ EOF
 }
 
 router_stat(){
-node=$1
-edge=$2
-th=$(cat $node | awk -F',' '{if ($2=="h") exit; print 0}' | wc -l)
-cat <(echo $th) $edge | python <(
+edge=$1
+cat $edge | python <(
 cat << "EOF"
-th=int(raw_input())
-r2r_cnt=0
 total_ip={}
 cnt=0
+r2r_cnt=0
 
 while True:
   try:
     line=raw_input()
   except:
     break
-  fields=line.split(',')
+  fields=line.split(' ')
   if not total_ip.has_key(fields[0]):
     total_ip[fields[0]]=[1,0]
   else:
@@ -94,7 +93,7 @@ while True:
     total_ip[fields[1]]=[0,1]
   else:
     total_ip[fields[1]][1]+=1
-  if int(fields[1][4:]) < th:
+  if not "." in fields[1]:
     r2r_cnt+=1
   cnt+=1
 
@@ -110,19 +109,21 @@ for ip in total_ip.keys():
   total[1][0]+=i
   if i > total[1][1]:
     total[1][1] = i
-  if int(ip[4:]) < th:
+  if not "." in ip:
     if o > router[0]:
       router[0] = o
+      print "o: "+str(ip)+","+str(o)
     router[1][0]+=i
     if i > router[1][1]:
       router[1][1] = i
   else:
     if i > host:
       host=i
+      print "i: "+str(ip)+","+str(i)
 
 print "#TON,NOL,NON" #type of node, number of links, number of nodes.
 print "B,"+str(cnt)+","+str(len(total_ip))
-print "R,"+str(r2r_cnt)+","+str(th)
+print "R,"+str(r2r_cnt)
 print "#TOD,BSOD,BMAX" #type of degree, sum of degres, max
 print "I,"+str(total[1][0])+","+str(total[1][1])
 print "O,"+str(total[0][0])+","+str(total[0][1])
@@ -135,10 +136,13 @@ EOF
 )
 }
 
-links=/ftp/results/201708.month
-router=/ftp/results/router
-links_stat $router $links
+#links=/ftp/results/201709.month
+#router=/ftp/disk/caidahk201709.router
+#edge=/ftp/disk/201709.edge
+test $# -ne 3 && exit
+links=$1
+router=$2
+edge=$3
 
-node=/ftp/results/201708.node
-edge=/ftp/results/201708.edge
-router_stat $node $edge
+links_stat $router $links
+router_stat $edge

@@ -1,55 +1,48 @@
 import sys
+import os
+import json
 import getopt
 from sets import Set
+
 import subprocess
 
-edge_dict = {}
+fp = open("format.json",'rb')
+format_json = json.loads(fp.read())
 
-def merge(a,b):
+def merge_2_lines(al,bl):
 	#0.in, 1.out, 2.is_dst, 3.star, 4.delay, 5.freq, 6.ttl, 7.monitor, 8.firstseen, 9.lastseen
-	if b[0] == "N":
-		a[0] = "N"
-	if int(b[1]) < int(a[1]):
-		a[1] = b[1]
-	if float(b[2]) < float(a[2]):
-		a[2] = b[2]
-	a[3] = str(int(a[3]) + int(b[3]))
-	if int(b[4]) < int(a[4]):
-		a[4] = b[4]
-		a[5] = b[5]
-	elif b[4] == a[4]:
-		a[5] = b[5] if b[5] < a[5] else a[5]
-	if int(b[6]) < int(a[6]):
-		a[6] = b[6]
-	if int(b[7]) > int(a[7]):
-		a[7] = b[7]
-	return a
+	if bl[2] == "N":
+		al[2] = "N"
+	if int(bl[3]) < int(al[3]):
+		al[3] = bl[3]
+	if float(bl[4]) < float(al[4]):
+		al[4] = bl[4]
+	al[5] = str(int(al[5]) + int(bl[5]))
+	if int(bl[6]) < int(al[6]):
+		al[6] = bl[6]
+		al[7] = bl[7]
+	elif bl[6] == al[6]:
+		al[7] = bl[7] if bl[7] < al[7] else al[7]
+	if int(bl[8]) < int(al[8]):
+		al[8] = bl[8]
+	if int(bl[9]) > int(al[9]):
+		al[9] = bl[9]
+	return al
 
-def insert(a,b,attr):
-	if ip2router.has_key(a):
-		aid=ip2router[a]
-	else:
-		aid=len(router_list)
-		router_list.append(Set([a]))
-		router_type.append('h')
-		ip2router[a]=aid
+def write_line(pl,fo):
+	line_str = ""
+	for i in pl:
+		line_str += i + format_json["sp"]
+	fo.write(line_str.strip(format_json["sp"])+"\n")
 
-	if ip2router.has_key(b):
-		bid=ip2router[b]
-	else:
-		bid=len(router_list)
-		router_list.append(Set([b]))
-		router_type.append('h')
-		ip2router[b]=bid
-
-	if not edge_dict.has_key((aid,bid)):
-		edge_dict[(aid,bid)] = attr
-	else:
-		edge_dict[(aid,bid)] = merge(edge_dict[(aid,bid)],attr)
+def insert(a,b,attr,h):
+	aid = ip2router[a] if ip2router.has_key(a) else a
+	bid = ip2router[b] if ip2router.has_key(b) else b
+	
+	h.stdin.write( str(aid) + format_json["sp"] + str(bid) + format_json["sp"] + attr )
 
 router_ip = {}
 router_list = []
-router_type = []
 deleted = []
 ip2router = {}
 
@@ -88,62 +81,64 @@ def aggr(a,b):
 
 def process(router,alias,edge,prefix):
 	global router_list
-	global router_type
 	#read
 	with open(router,'rb') as rf:
-		while True:
-			line=rf.readline()
-			if line == "":
-				break
+		for line in rf.readlines():
 			router_ip[line.strip('\n')] = ""
 	rf.close()
 
 	with open(alias,'rb') as af:
-		while True:
-			line=af.readline()
-			if line == "":
-				break
+		for line in af.readlines():
 			line=line.strip('\n')
 			aggr(line.split()[0],line.split()[1])
 	af.close()
+
 	router_list = [ router_list[i] for i in range(len(router_list)) if not deleted[i] ]
-	router_type = [ 'r' for i in range(len(router_list)) ]
 	for k,v in router_ip.items():
 		if v != 1:
 			ip2router[k] = len(router_list)
 			router_list.append([k])
-			router_type.append('r')
-	
+
 	with open(edge,'rb') as ef:
-		while True:
-			line=ef.readline()
-			if line == "":
-				break
-			line=line.strip('\n')
-			insert(line.split(' ')[0],line.split(' ')[1],line.split(' ')[2:])
+		efto = open(edge+".tmp",'wb') 
+		h = subprocess.Popen(['sort','--parallel','4'], stdin=subprocess.PIPE, stdout=efto)
+		for line in ef.readlines():
+			insert(line.split(' ')[0],line.split(' ')[1],line.split(' ',2)[2],h)
+	h.stdin.close()
+	efto.close()
 	ef.close()
-	
+
+	h.wait()
 	#write
-	sys.stderr.write( "writing node ... \n" )
 	with open(prefix+".node",'wb') as of:
 		for i in range(len(router_list)):
-			of.write( "Node" + str(i) + "," + str(router_type[i]) + ",")
+			of.write( str(i) + format_json["sp"] )
 			r = router_list[i]
 			if_str = ""
 			for f in r:
 				if_str += f+" "
 			of.write( if_str.strip(" ") + "\n")
-	sys.stderr.write( "closing node ... \n" )
 	of.close()
 
-	sys.stderr.write( "writing edge ... \n" )
 	with open(prefix+".edge",'wb') as of:
-		for k,v in edge_dict.items():
-			of.write("Node" + str(k[0]) + ",Node" + str(k[1]))
-			for f in v:
-				of.write("," + str(f))
-			of.write("\n")
-	sys.stderr.write( "closing edge ... \n" )
+		efti = open(edge+".tmp",'rb')
+		pl = []
+		al = efti.readline().strip('\n').split(' ')
+		while True:
+			line = efti.readline()
+			if line == "":
+				if pl == [] or al[0:2] == pl[0:2]:
+					write_line(al,of)
+				break
+			pl = al
+			al = line.strip('\n').split(' ')
+			if al[0:2] == pl[0:2]:
+				al = merge_2_lines(al,pl)
+			else:
+				write_line(pl,of)
+
+	efti.close()
+	#os.remove(edge+".tmp")
 	of.close()
 
 def usage():
