@@ -31,7 +31,12 @@ def merge_2_lines(al,bl):
 
 def write_line(pl,fo):
 	line_str = ""
-	for i in pl:
+	for i in pl[:2]:
+		if not "." in i:
+			i = min(router_list[int(i)])
+		line_str += i + format_json["sp"]
+			
+	for i in pl[2:]:
 		line_str += i + format_json["sp"]
 	fo.write(line_str.strip(format_json["sp"])+"\n")
 
@@ -112,10 +117,9 @@ def process(router,alias,edge,prefix):
 	#write
 	with open(prefix+".node",'wb') as of:
 		for i in range(len(router_list)):
-			of.write( str(i) + format_json["sp"] )
 			r = router_list[i]
 			if_str = ""
-			for f in r:
+			for f in sorted(r):
 				if_str += f+" "
 			of.write( if_str.strip(" ") + "\n")
 	of.close()

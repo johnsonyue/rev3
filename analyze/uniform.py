@@ -35,26 +35,25 @@ def transform_caida():
 			else:
 				hop_str = ""
 				for it in hop.split(';'):
-					hop_str += it.rsplit(',',1)[0] + "," + str(i+1) + ";"
-				hop_str = hop_str.strip(';')
+					hop_str += it.rsplit(',',1)[0] + format_json["itd"] + str(i+1) + format_json["td"] 
+				hop_str = hop_str.strip(format_json["td"])
 
 			path_str += hop_str + format_json["hd"]
 		path_str = path_str.strip(format_json["hd"])
+
 		replied = fields[6]
 		dst_rtt = fields[7]
-		path_str += "" if replied == "N" else format_json["hd"] + str(dstip) + format_json["itd"] + str(dst_rtt) + format_json["itd"] + str(len(path_fields)+1)
+		request_ttl = int(fields[8])
+		if replied == "R":
+			if request_ttl == len(path_fields):
+				path_str += format_json["td"] + str(dstip) + format_json["itd"] + str(dst_rtt) + format_json["itd"] + str(request_ttl)
+			else:
+				for i in range(request_ttl-len(path_fields)-1):
+					path_str += format_json["hd"] + format_json["bh"]
+				path_str += format_json["hd"] + str(dstip) + format_json["itd"] + str(dst_rtt) + format_json["itd"] + str(request_ttl)
 
 		print str(srcip) + format_json["fd"] + str(dstip) + format_json["fd"] + str(timestamp) + format_json["fd"] + str(path_str)
 			
-		'''
-		rpl_ttl = fields[9]
-		halt_reason = fields[10]
-		halt_data = fields[11]
-		extra = str(halt_reason) + format_json["ed"] + str(halt_data) + format_json["ed"] + rpl_ttl
-		'''
-		
-		#print str(dstip) + format_json["fd"] + str(timestamp) + format_json["fd"] + str(path_str) + format_json["fd"] + str(extra)
-
 def transform_iplane():
 	path = []
 	#srcip = ""
