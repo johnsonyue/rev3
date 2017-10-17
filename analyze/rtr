@@ -1,0 +1,7 @@
+#!/bin/bash
+test $# -lt 2 && exit
+in=$1
+out=$2
+
+chunk=4
+ls $in/*.month | sort -r | sed 's/\.month//g' | parallel -j $chunk --no-notice python rtrtopo.py -r {}.router -a {}.pairs -e {}.month -p {}

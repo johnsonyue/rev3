@@ -6,6 +6,7 @@ in_dir=$1
 month=$2
 out_dir=$3
 
+echo "month: $month"
 start=$(date +%s)
 echo "ls -d $in_dir/$month* | sed "s/^.*\///g" | while read dir; do ls $in_dir/$dir/* | while read line; do printf $line" " 1>&2; start=$(date +%s); ./decode -t caida -f $line; echo $(($(date +%s)-$start)) 1>&2; done | python trace2link.py >$out_dir/$dir; done"
 ls -d $in_dir/$month* | sed "s/^.*\///g" | while read dir; do ls $in_dir/$dir/* | while read line; do printf $line" " 1>&2; start=$(date +%s); ./decode -t caida -f $line; echo $(($(date +%s)-$start)) 1>&2; done | python trace2link.py >$out_dir/$dir; done
@@ -17,8 +18,12 @@ ls $out_dir/$month* | python mergelinks.py -o $out_dir/$month.month
 echo $(($(date +%s)-$start))"s"
 }
 
+export -f month
+
 [ $# -ne 2 ] && exit
 in=$1
 out=$2
 
-ls $in | sed "s/^.*\///g" | cut -c 1-6 | sort -r | uniq | while read line; do echo "month: $line"; month $in $line $out; done
+#ls $in | sed "s/^.*\///g" | cut -c 1-6 | sort -r | uniq | while read line; do echo "month: $line"; month $in $line $out; done
+chunk=8
+ls $in | sed "s/^.*\///g" | cut -c 1-6 | sort -r | uniq | parallel -j $chunk --no-notice month $in {} $out

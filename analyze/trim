@@ -1,0 +1,19 @@
+#!/bin/bash
+
+ls /ftp/results/*.month | while read line; do echo $line 1>&2; cat $line | python <(
+cat << "EOF"
+while True:
+  try:
+    line=raw_input()
+  except:
+    break
+  fields=line.split(' ')
+  if fields[0] == fields[1]:
+    continue
+  fields[4] = "0" if float(fields[4]) == 0 else "%.3f" % float(fields[4])
+  fstr=""
+  for f in fields:
+    fstr+=f+" "
+  print fstr.strip(" ")
+EOF
+) >$line.trim; done

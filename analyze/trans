@@ -1,0 +1,55 @@
+#!/bin/bash
+month(){
+node=$1
+edge=$2
+
+cat $node <(echo "#") $edge | python <(
+cat << "EOF"
+import sys
+import socket
+import struct
+import subprocess
+from sets import Set
+def ip_str2int(ip):
+  packedIP = socket.inet_aton(ip)
+  return struct.unpack("!L", packedIP)[0]
+
+router_list=[]
+while True:
+  line=raw_input()
+  if (line[0]=="#"):
+    break
+  fields = line.split(' ')
+  router_list.append(Set(map(lambda x:ip_str2int(x), fields[1:])))
+h=subprocess.Popen(['sort','-g','-t',' ','-k','1,1','-k','2,2','--parallel','4'], stdin=subprocess.PIPE, stdout=sys.stdout)
+
+while True:
+  try:
+    line=raw_input()
+  except:
+    break
+  fields=line.split(' ',2)
+  i=ip_str2int(fields[0]) if ("." in fields[0]) else min(router_list[int(fields[0])])
+  o=ip_str2int(fields[1]) if ("." in fields[1]) else min(router_list[int(fields[1])])
+  h.stdin.write(str(i)+" "+str(o)+" "+str(fields[2]+"\n"))
+h.stdin.close()
+h.wait()
+EOF
+) | python <(
+cat << "EOF"
+import socket
+import struct
+def ip_int2str(i):
+  return socket.inet_ntoa(struct.pack('!L',i)) 
+while True:
+  try:
+    line=raw_input()
+  except:
+    break
+  fields=line.split(' ',2)
+  print str(ip_int2str(int(fields[0])))+" "+str(ip_int2str(int(fields[1])))+" "+str(fields[2])
+EOF
+)
+}
+
+month sample.node sample.edge

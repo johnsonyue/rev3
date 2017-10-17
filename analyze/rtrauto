@@ -1,0 +1,34 @@
+#!/bin/bash
+month(){
+  remote=host
+  port=22
+  password=pass
+  dst_dir=/home/
+
+  in=$1
+  out=$2
+  outfile=caidahk$(echo $in | sed 's/^.*\///g' | sed 's/\.month//g').router
+  echo $in,$out,$outfile
+  if test -f $out/$outfile; then 
+    echo "skipped existing file: $out/$outfile"
+  else
+    echo "./rtrif.sh -i $in -o $out/$outfile"
+    ./rtrif.sh -i $in -o $out/$outfile
+  fi
+
+  #spawn ssh -p $port root@$remote \"ls $dst_dir\"
+  expect -c "set timeout -1
+  spawn /bin/bash
+  expect \"#\" {send \"tar zcf - -C /ftp/disk $outfile | ssh -p $port root@$remote 'cd $dst_dir && tar zxvf -'\r\"}
+  expect -re \".*password.*\" {send \"$password\r\"}
+  expect \"#\" {send \"exit\r\"}
+  expect eof
+  "
+}
+export -f month
+
+test $# -lt 2 && exit
+in=$1
+out=$2
+
+ls $in/*.month | sort -r | tail -n +4 | parallel -j 2 --no-notice month {} $out
