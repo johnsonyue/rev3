@@ -26,7 +26,7 @@ def transform_caida():
 		timestamp = fields[5]
 		
 		path = fields[13]
-		path_str = ""
+		hop_list = []
 		path_fields = path.split('\t')
 		for i in range(len(path_fields)):
 			hop = path_fields[i]
@@ -38,19 +38,23 @@ def transform_caida():
 					hop_str += it.rsplit(',',1)[0] + format_json["itd"] + str(i+1) + format_json["td"] 
 				hop_str = hop_str.strip(format_json["td"])
 
-			path_str += hop_str + format_json["hd"]
-		path_str = path_str.strip(format_json["hd"])
+			hop_list.append(hop_str)
 
 		replied = fields[6]
 		dst_rtt = fields[7]
 		request_ttl = int(fields[8])
 		if replied == "R":
-			if request_ttl == len(path_fields):
-				path_str += format_json["td"] + str(dstip) + format_json["itd"] + str(dst_rtt) + format_json["itd"] + str(request_ttl)
+			if request_ttl <= len(path_fields):
+				hop_list[request_ttl-1] += format_json["td"] + str(dstip) + format_json["itd"] + str(dst_rtt) + format_json["itd"] + str(request_ttl)
 			else:
 				for i in range(request_ttl-len(path_fields)-1):
-					path_str += format_json["hd"] + format_json["bh"]
-				path_str += format_json["hd"] + str(dstip) + format_json["itd"] + str(dst_rtt) + format_json["itd"] + str(request_ttl)
+					hop_list.append(format_json["bh"])
+				hop_list.append(str(dstip) + format_json["itd"] + str(dst_rtt) + format_json["itd"] + str(request_ttl))
+		
+		path_str = ""
+		for h in hop_list:
+			path_str += h + format_json["hd"]
+		path_str = path_str.strip(format_json["hd"])
 
 		print str(srcip) + format_json["fd"] + str(dstip) + format_json["fd"] + str(timestamp) + format_json["fd"] + str(path_str)
 			
