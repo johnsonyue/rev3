@@ -73,8 +73,8 @@ while True:
   print fields[0]
   if not out.has_key(fields[1]):
     out[fields[1]] = fields[2]
-  elif fields[2] == "Y":
-    out[fields[1]] = "Y"
+  elif fields[2] == "N":
+    out[fields[1]] = "N"
 for k,v in out.items():
   if v == "N":
     print k
@@ -94,8 +94,8 @@ while True:
   print fields[0]
   if not out.has_key(fields[1]):
     out[fields[1]] = fields[2]
-  elif fields[2] == "Y":
-    out[fields[1]] = "Y"
+  elif fields[2] == "N":
+    out[fields[1]] = "N"
 for k,v in out.items():
   if v == "N":
     print k
