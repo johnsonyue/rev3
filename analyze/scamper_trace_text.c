@@ -198,11 +198,13 @@ static char *header_tostr(const scamper_trace_t *trace)
   if(trace->src != NULL)
     {
       scamper_addr_tostr(trace->src, src, sizeof(src));
-      snprintf(header, sizeof(header), "traceroute from %s to %s", src, dst);
+      //snprintf(header, sizeof(header), "traceroute from %s to %s", src, dst);
+      snprintf(header, sizeof(header), "traceroute from %s to %s %ld", src, dst, trace->start.tv_sec);
     }
   else
     {
-      snprintf(header, sizeof(header), "traceroute to %s", dst);
+      //snprintf(header, sizeof(header), "traceroute to %s", dst);
+      snprintf(header, sizeof(header), "traceroute to %s %ld", dst, trace->start.tv_sec);
     }
 
   return strdup(header);
